@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Binary Logistic Regression Dashboard</title>
+
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+
+    <style>
+        /* --- NATURAL FLOW SCROLLABLE SYSTEM --- */
+        html, body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+            background: #f4f7f6;
+            color: #0f172a;
+            box-sizing: border-box;
+        }
+
+        *, *:before, *:after {
+            box-sizing: inherit;
+        }
+
+        /* --- MASTER CONTAINER WITH COMFORTABLE PADDING --- */
+        .app-layout {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            max-width: 1600px; 
+            margin: 0 auto;
+            padding: 24px;
+            gap: 20px;
+        }
+
+        h1 {
+            text-align: center;
+            margin: 0;
+            padding-bottom: 10px;
+            color: #00017A;
+            font-size: 26px;
+        }
+
+        /* --- FLEXIBLE RESPONSIVE LAYOUT COLUMNS --- */
+        .dashboard-container {
+            display: flex;
+            flex-direction: row;
+            gap: 20px;
+            width: 100%;
+        }
+
+        /* Responsive Wrap for smaller screens */
+        @media (max-width: 900px) {
+            .dashboard-container {
+                flex-direction: column;
+            }
+            .controls-sidebar {
+                width: 100% !important;
+            }
+        }
+
+        /* --- LEFT SIDEBAR PANEL (With Course Info Card) --- */
+        .controls-sidebar {
+            width: 300px;
+            flex-shrink: 0;
+            background: #ffffff;
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            align-self: flex-start; 
+        }
+
+        /* Course Context Header Card */
+        .course-card {
+            background: #f8fafc;
+            border: 1px dashed #00017A;
+            border-radius: 8px;
+            padding: 14px;
+            margin-bottom: 5px;
+        }
+
+        .course-card .course-title {
+            font-size: 14px;
+            font-weight: bold;
+            color: #00017A;
+            margin: 0 0 4px 0;
+        }
+
+        .course-card .student-index {
+            font-size: 12px;
+            font-family: 'Courier New', Courier, monospace;
+            color: #475569;
+            margin: 0;
+            font-weight: bold;
+        }
+
+        .control-section h4 {
+            margin: 0 0 12px 0;
+            font-size: 11px;
+            color: #475569;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 1px solid #e2e8f0;
+            padding-bottom: 6px;
+        }
+
+        /* --- SIDEBAR COMPONENTS STYLING --- */
+        .slider-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            margin-bottom: 14px;
+        }
+
+        .slider-label-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 13px;
+        }
+
+        .slider-label-row b {
+            color: #0f172a;
+        }
+
+        .slider-group input[type="range"] {
+            width: 100%;
+            height: 6px;
+            border-radius: 5px;
+            cursor: pointer;
+            -webkit-appearance: none;
+            appearance: none;
+            background: #e2e8f0;
+        }
+
+        #sampleSize { accent-color: #00017A; }
+        #imbalance { accent-color: #00017A; }
+
+        .btn-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        button {
+            width: 100%;
+            padding: 9px 12px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            cursor: pointer;
+            background: #ffffff;
+            font-weight: 500;
+            color: #475569;
+            text-align: left;
+            font-size: 13px;
+            transition: all 0.2s ease;
+        }
+
+        button:hover {
+            background: #f8fafc;
+            border-color: #94a3b8;
+        }
+
+        button.active {
+            background: #00017A;
+            color: #ffffff;
+            font-weight: bold;
+            border-color: #00017A;
+            box-shadow: 0 2px 8px rgba(0, 1, 122, 0.15);
+        }
+
+        /* --- RIGHT CONTENT LAYOUT MAIN PANEL --- */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        /* STAT CARDS ROW */
+        .metrics-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 16px;
+        }
+
+        .card {
+            background: white;
+            padding: 16px;
+            border-radius: 10px;
+            text-align: center;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+        }
+
+        .card h3 {
+            margin: 0 0 6px 0;
+            font-size: 11px;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .card p {
+            margin: 0;
+            font-size: 22px;
+            font-weight: bold;
+            color: #00017A;
+        }
+
+        .card-note {
+            font-size: 11px;
+            color: #64748b;
+            font-style: italic;
+            margin-top: 6px;
+            border-top: 1px solid #f1f5f9;
+            padding-top: 4px;
+        }
+
+        /* NATURAL EXPANDING CHART GRID */
+        .chart-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 18px;
+        }
+
+        @media (max-width: 1200px) {
+            .chart-grid {
+                grid-template-columns: 1fr; 
+            }
+        }
+
+        /* COMPONENT BOX CARDS FOR VISUALIZATIONS */
+        .chart-wrapper {
+            background: white;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            padding: 12px; 
+        }
+
+        /* OPTIMIZED SIZE: Lowered canvas viewport window mapping to fix scrolling fatigue */
+        .chart-container {
+            width: 100%;
+            height: 310px; 
+        }
+
+        /* --- PERFORMANCE FOOTER BLOCK --- */
+        .summary-footer {
+            background: white;
+            padding: 16px 20px;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02);
+            display: flex;
+            align-items: center;
+            gap: 24px;
+        }
+
+        @media (max-width: 768px) {
+            .summary-footer {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 14px;
+            }
+            .summary-footer h3 {
+                border-right: none !important;
+                padding-right: 0 !important;
+                border-bottom: 2px solid #e2e8f0;
+                padding-bottom: 4px;
+                width: 100%;
+            }
+            .footer-metrics-grid {
+                flex-wrap: wrap;
+                gap: 16px !important;
+            }
+        }
+
+        .summary-footer h3 {
+            margin: 0;
+            color: #00017A;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-right: 2px solid #e2e8f0;
+            padding-right: 20px;
+            flex-shrink: 0;
+        }
+
+        .footer-metrics-grid {
+            display: flex;
+            flex: 1;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            font-size: 13px;
+        }
+
+        .footer-metric-item {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .footer-metric-item span {
+            font-size: 10px;
+            color: #64748b;
+            text-transform: uppercase;
+            font-weight: 500;
+        }
+
+        .footer-metric-item b {
+            font-size: 14px;
+            color: #00017A;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="app-layout">
+        <h1>Binary Logistic Regression Interactive Dashboard</h1>
+
+        <div class="dashboard-container">
+
+            <div class="controls-sidebar">
+                
+                <div class="course-card">
+                    <div class="course-title">ST 4035 - Data Science</div>
+                    <div class="student-index">Name: W.A.D.Fernando<br>Index: s16979</div>
+                </div>
+
+                <div class="control-section">
+                    <h4>Dataset Parameters</h4>
+                    
+                    <div class="slider-group">
+                        <div class="slider-label-row">
+                            <b>Sample Size:</b>
+                            <span id="sampleValue" style="color: #00017A; font-weight: bold;">n = 750</span>
+                        </div>
+                        <input type="range" id="sampleSize" min="100" max="2000" step="50" value="750">
+                    </div>
+
+                    <div class="slider-group">
+                        <div class="slider-label-row">
+                            <b>Minority Class:</b>
+                            <span id="imbalanceValue" style="color: #00017A; font-weight: bold;">20%</span>
+                        </div>
+                        <input type="range" id="imbalance" min="5" max="50" step="5" value="20">
+                    </div>
+                </div>
+
+                <div class="control-section">
+                    <h4>Balancing Method</h4>
+                    <div id="balanceGroup" class="btn-group">
+                        <button class="active" data-value="None">None (Imbalanced)</button>
+                        <button data-value="Oversampling">Oversampling</button>
+                        <button data-value="Undersampling">Undersampling</button>
+                        <button data-value="SMOTE">SMOTE</button>
+                    </div>
+                </div>
+
+                <div class="control-section">
+                    <h4>Link Function</h4>
+                    <div id="linkGroup" class="btn-group">
+                        <button class="active" data-value="Logit">Logit</button>
+                        <button data-value="Probit">Probit</button>
+                        <button data-value="Cloglog">Complementary log-log</button>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="main-content">
+                
+                <div class="metrics-row">
+                    <div class="card">
+                        <h3>Total Samples</h3>
+                        <p id="totalSamples">-</p>
+                    </div>
+                    <div class="card">
+                        <h3>Class 1 Count</h3>
+                        <p id="class1">-</p>
+                        <div class="card-note">Minority class</div>
+                    </div>
+                    <div class="card">
+                        <h3>Class 0 Count</h3>
+                        <p id="class0">-</p>
+                        <div class="card-note">Majority class</div>
+                    </div>
+                    <div class="card">
+                        <h3>Imbalance Ratio</h3>
+                        <p id="ratio">-</p>
+                        <div class="card-note">Class 1 : Class 0</div>
+                    </div>
+                </div>
+
+                <div class="chart-grid">
+                    <div class="chart-wrapper">
+                        <div id="chart1" class="chart-container"></div>
+                    </div>
+                    <div class="chart-wrapper">
+                        <div id="chart2" class="chart-container"></div>
+                    </div>
+                    <div class="chart-wrapper">
+                        <div id="chart3" class="chart-container"></div>
+                    </div>
+                    <div class="chart-wrapper">
+                        <div id="chart4" class="chart-container"></div>
+                    </div>
+                </div>
+
+                <div class="summary-footer" id="infoFooter">
+                    <h3>Performance Matrix</h3>
+                    <div class="footer-metrics-grid">
+                        <div class="footer-metric-item">
+                            <span>AUC Value</span>
+                            <b id="aucVal">-</b>
+                        </div>
+                        <div class="footer-metric-item">
+                            <span>Accuracy</span>
+                            <b id="accVal">-</b>
+                        </div>
+                        <div class="footer-metric-item">
+                            <span>Sensitivity (TPR)</span>
+                            <b id="senVal">-</b>
+                        </div>
+                        <div class="footer-metric-item">
+                            <span>Specificity (TNR)</span>
+                            <b id="specVal">-</b>
+                        </div>
+                        <div class="footer-metric-item">
+                            <span>Link Function</span>
+                            <b id="linkVal">-</b>
+                        </div>
+                        <div class="footer-metric-item">
+                            <span>Balancing Method</span>
+                            <b id="balanceVal">-</b>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+    </div>
+
+<script>
+const sampleSlider = document.getElementById("sampleSize");
+const imbalanceSlider = document.getElementById("imbalance");
+
+/* PERSISTED GLOBAL STRUCT STATE VARIABLES */
+let balanceMethod = "None";
+let linkFunction = "Logit";
+let globalAUC = 0.5;
+let globalTPR = 0.5;
+let globalTNR = 0.5;
+
+/* ---------------- ELEMENT INTERACTIVE EVENT DRIVER RECEPTORS ---------------- */
+document.getElementById("balanceGroup").addEventListener("click", (e) => {
+    if(e.target.tagName === "BUTTON"){
+        document.querySelectorAll("#balanceGroup button").forEach(b => b.classList.remove("active"));
+        e.target.classList.add("active");
+        balanceMethod = e.target.getAttribute("data-value");
+        updateDashboard();
+    }
+});
+
+document.getElementById("linkGroup").addEventListener("click", (e) => {
+    if(e.target.tagName === "BUTTON"){
+        document.querySelectorAll("#linkGroup button").forEach(b => b.classList.remove("active"));
+        e.target.classList.add("active");
+        linkFunction = e.target.getAttribute("data-value");
+        updateDashboard();
+    }
+});
+
+/* ---------------- GAUSSIAN CDF ALGORITHMIC CALCULATIONS FOR PROBIT CURVES ---------------- */
+const standardNormalCDF = x => {
+    const t = 1 / (1 + 0.2316419 * Math.abs(x));
+    const d = 0.3989423 * Math.exp(-x * x / 2);
+    const p = d * t * (0.3193815 + t * (-0.3565638 + t * (1.781478 + t * (-1.821256 + t * 1.330274))));
+    return x >= 0 ? 1 - p : p;
+};
+
+/* ---------------- REALTIME DASHBOARD COMPILATION PIPELINE ENGINE ---------------- */
+function updateDashboard(){
+    let n = parseInt(sampleSlider.value);
+    let minorityPercent = parseInt(imbalanceSlider.value);
+
+    let minority = Math.floor(n * minorityPercent / 100);
+    let majority = n - minority;
+
+    let balancedMinority = minority;
+    let balancedMajority = majority;
+
+    if(balanceMethod === "Oversampling"){
+        balancedMinority = majority;
+    }
+    else if(balanceMethod === "Undersampling"){
+        balancedMajority = minority;
+    }
+    else if(balanceMethod === "SMOTE"){
+        balancedMinority = Math.floor(majority * 0.85);
+    }
+
+    /* MAP CURRENT LABEL TEXT CONTENT STRINGS */
+    document.getElementById("sampleValue").innerHTML = "n = " + n;
+    document.getElementById("imbalanceValue").innerHTML = minorityPercent + "%";
+
+    document.getElementById("totalSamples").innerHTML = balancedMinority + balancedMajority;
+    document.getElementById("class1").innerHTML = balancedMinority;
+    document.getElementById("class0").innerHTML = balancedMajority;
+
+    let ratioText = (balancedMajority / balancedMinority).toFixed(1);
+    document.getElementById("ratio").innerHTML = "1 : " + ratioText;
+
+    /* REUSABLE CHART DESIGN CONFIGURATION - TIED DOWN MARGIN FOR LIGHTER WEIGHT VISUALS */
+    const chartLayoutConfig = {
+        font: { size: 10, color: "#000000" },
+        margin: { t: 65, r: 15, b: 35, l: 40 }, 
+        showlegend: true,
+        legend: { 
+            font: { size: 9, color: "#000000" }, 
+            orientation: "h", 
+            x: 0, 
+            y: 1.07, 
+            xanchor: "left", 
+            yanchor: "bottom" 
+        }
+    };
+
+    /* CONFUSION MATRIX INVERTED PALETTE SCALE */
+    const invertedPaletteScale = [
+        [0, "#FFB900"],
+        [0.5, "#5d568d"],
+        [1, "#00017A"]
+    ];
+
+    /* CHART 1: CLASS DISTRIBUTION */
+    Plotly.newPlot("chart1", [
+        {
+            x: ["Original", "Balanced"],
+            y: [minority, balancedMinority],
+            name: "Class 1 (Minority)",
+            type: "bar",
+            marker: { color: "#FFB900" }   
+        },
+        {
+            x: ["Original", "Balanced"],
+            y: [majority, balancedMajority],
+            name: "Class 0 (Majority)",
+            type: "bar",
+            marker: { color: "#00017A" }   
+        }
+    ], {
+        title: { text: "Chart 1 - Class Distribution", font: { size: 12, color: "#000000", weight: "bold" }, x: 0, y: 0.96 },
+        xaxis: { title: { text: "Dataset Variant", font: { size: 10, color: "#000000" } }, tickfont: { color: "#000000" } },
+        yaxis: { title: { text: "Count", font: { size: 10, color: "#000000" } }, tickfont: { color: "#000000" } },
+        barmode: "group",
+        ...chartLayoutConfig
+    }, { responsive: true, displayModeBar: false });
+
+    /* CHART 2: PROBABILITY LINK FUNCTIONS */
+    let eta = [], logit = [], probit = [], cloglog = [];
+    for(let x = -4; x <= 4; x += 0.15){
+        eta.push(x);
+        logit.push(1 / (1 + Math.exp(-x)));
+        probit.push(standardNormalCDF(x));
+        cloglog.push(1 - Math.exp(-Math.exp(x)));
+    }
+
+    Plotly.newPlot("chart2", [
+        {
+            x: eta, y: logit, name: "Logit",
+            line: { color: "#00017A", width: linkFunction === "Logit" ? 3 : 1.2 }
+        },
+        {
+            x: eta, y: probit, name: "Probit",
+            line: { color: "#FFB900", width: linkFunction === "Probit" ? 3 : 1.2, dash: "dash" }
+        },
+        {
+            x: eta, y: cloglog, name: "Cloglog",
+            line: { color: "#94a3b8", width: linkFunction === "Cloglog" ? 3 : 1.2, dash: "dot" }
+        }
+    ], {
+        title: { text: "Chart 2 - Fitted Probability Curves (Link Functions)", font: { size: 12, color: "#000000", weight: "bold" }, x: 0, y: 0.96 },
+        xaxis: { title: { text: "Linear Predictor (η)", font: { size: 10, color: "#000000" } }, tickfont: { color: "#000000" } },
+        yaxis: { title: { text: "P(Y=1|η)", font: { size: 10, color: "#000000" } }, range: [0, 1], tickfont: { color: "#000000" } },
+        ...chartLayoutConfig
+    }, { responsive: true, displayModeBar: false });
+
+    /* CHART 3: ROC PERFORMANCE CURVE */
+    let baseAUC = 0.62 + (minorityPercent / 200);
+    if(balanceMethod !== "None") baseAUC += 0.08;
+    if(linkFunction === "Logit") baseAUC += 0.04;
+    if(linkFunction === "Probit") baseAUC += 0.02;
+    baseAUC = Math.min(0.96, Math.max(0.5, baseAUC));
+
+    let rocPoints = [], rocX = [], rocY = [];
+    for(let i = 0; i <= 1.001; i += 0.05){
+        let fpr = i;
+        let tpr = Math.min(1, Math.pow(fpr, (1 - baseAUC) / baseAUC));
+        rocX.push(fpr); rocY.push(tpr);
+        rocPoints.push({ x: fpr, y: tpr });
+    }
+
+    globalAUC = (points => {
+        let auc = 0;
+        for(let i = 1; i < points.length; i++) {
+            auc += (points[i].x - points[i-1].x) * (points[i-1].y + points[i].y) / 2;
+        }
+        return auc;
+    })(rocPoints);
+
+    Plotly.newPlot("chart3", [
+        { x: rocX, y: rocY, mode: "lines", name: "ROC Performance Model", line: { color: "#00017A", width: 2 } },
+        { x: [0, 1], y: [0, 1], mode: "lines", name: "Random Baseline", line: { dash: "dash", color: "#94a3b8" } }
+    ], {
+        title: { text: "Chart 3 - ROC Performance Curve", font: { size: 12, color: "#000000", weight: "bold" }, x: 0, y: 0.96 },
+        xaxis: { title: { text: "False Positive Rate (FPR)", font: { size: 10, color: "#000000" } }, tickfont: { color: "#000000" } },
+        yaxis: { title: { text: "True Positive Rate (TPR)", font: { size: 10, color: "#000000" } }, range: [0, 1], tickfont: { color: "#000000" } },
+        ...chartLayoutConfig,
+        annotations: [{
+            x: 0.65,
+            y: 0.12,
+            xref: 'paper',
+            yref: 'paper',
+            text: `<b>AUC Area: ${globalAUC.toFixed(3)}</b>`,
+            showarrow: false,
+            font: { size: 10, color: "#000000" },
+            backgroundcolor: "#FFB900",
+            bordercolor: "#00017A",
+            borderwidth: 1,
+            borderpad: 4,
+            borderRadius: 4
+        }]
+    }, { responsive: true, displayModeBar: false });
+
+    /* CHART 4: CONFUSION MATRIX HEATMAP */
+    let baseTP = 0.62 + (n / 15000);
+    let baseTN = 0.75 + (n / 18000);
+
+    if (balanceMethod === "Oversampling") { baseTP += 0.12; baseTN -= 0.06; } 
+    else if (balanceMethod === "Undersampling") { baseTP += 0.07; baseTN -= 0.04; } 
+    else if (balanceMethod === "SMOTE") { baseTP += 0.14; baseTN -= 0.02; }
+
+    if (linkFunction === "Logit") { baseTP += 0.03; baseTN += 0.02; } 
+    else if (linkFunction === "Probit") { baseTP += 0.01; baseTN += 0.01; } 
+    else if (linkFunction === "Cloglog") { baseTP += 0.04; baseTN -= 0.03; }
+
+    globalTPR = Math.min(0.97, Math.max(0.03, baseTP));
+    globalTNR = Math.min(0.97, Math.max(0.03, baseTN));
+
+    let tpr = globalTPR, tnr = globalTNR;
+    let fnr = 1 - tpr, fpr = 1 - tnr;
+
+    let countTN = Math.round(tnr * balancedMajority);
+    let countFP = Math.round(fpr * balancedMajority);
+    let countFN = Math.round(fnr * balancedMinority);
+    let countTP = Math.round(tpr * balancedMinority);
+
+    Plotly.newPlot("chart4", [{
+        z: [[tnr, fpr], [fnr, tpr]],
+        x: ["Predicted 0", "Predicted 1"],
+        y: ["True 0", "True 1"],
+        type: "heatmap",
+        colorscale: invertedPaletteScale,
+        zmin: 0, zmax: 1, 
+        showscale: true,
+        colorbar: {
+            thickness: 10,
+            len: 1.0,
+            ypad: 0,
+            tickfont: { size: 9, color: "#000000" },
+            title: { text: "Ratio", font: { size: 9, color: "#000000" } }
+        },
+        text: [
+            [`<b>TNR (True Neg)</b><br>Rate: ${tnr.toFixed(2)}<br>n=${countTN}`, `<b>FPR (False Pos)</b><br>Rate: ${fpr.toFixed(2)}<br>n=${countFP}`],
+            [`<b>FNR (False Neg)</b><br>Rate: ${fnr.toFixed(2)}<br>n=${countFN}`, `<b>TPR (True Pos)</b><br>Rate: ${tpr.toFixed(2)}<br>n=${countTP}`]
+        ],
+        texttemplate: "%{text}",
+        textfont: { size: 10, color: "#000000" },
+        hovertemplate: "Ratio: %{z:.3f}<extra></extra>"
+    }], {
+        title: { text: "Chart 4 - Confusion Matrix (Normalised)", font: { size: 12, color: "#000000", weight: "bold" }, x: 0, y: 0.96 },
+        xaxis: { side: "bottom", tickfont: { color: "#000000" } },
+        yaxis: { autorange: "reversed", tickfont: { color: "#000000" } },
+        font: { size: 10, color: "#000000" },
+        margin: { t: 65, r: 10, b: 35, l: 40 }, 
+        showlegend: false 
+    }, { responsive: true, displayModeBar: false });
+
+    /* DATA METRICS LOG RENDER EVALUATOR EXPORTS */
+    let currentTotal = balancedMinority + balancedMajority;
+    let accuracy = (tpr * (balancedMinority / currentTotal)) + (tnr * (balancedMajority / currentTotal));
+
+    document.getElementById("aucVal").innerText = globalAUC.toFixed(3);
+    document.getElementById("accVal").innerText = accuracy.toFixed(3);
+    document.getElementById("senVal").innerText = (tpr * 100).toFixed(1) + "%";
+    document.getElementById("specVal").innerText = (tnr * 100).toFixed(1) + "%";
+    document.getElementById("linkVal").innerText = linkFunction;
+    document.getElementById("balanceVal").innerText = balanceMethod;
+}
+
+/* INITIALIZE DASHBOARD ENGINE */
+updateDashboard();
+
+/* SLIDER TRIGGER LISTENERS */
+sampleSlider.oninput = updateDashboard;
+imbalanceSlider.oninput = updateDashboard;
+
+/* RE-LAYOUT EVENT LISTENER PROMPTS */
+window.onresize = () => {
+    Plotly.Plots.resize("chart1");
+    Plotly.Plots.resize("chart2");
+    Plotly.Plots.resize("chart3");
+    Plotly.Plots.resize("chart4");
+};
+</script>
+
+</body>
+</html> 
