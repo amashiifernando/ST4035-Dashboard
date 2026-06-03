@@ -1,5 +1,9 @@
 # Binary Logistic Regression Interactive Dashboard
 
+## Dashboard Preview
+
+![Dashboard Preview](dashboard.png)
+
 ## Overview
 
 This project is an interactive web-based dashboard developed for the ST 4035 Data Science course. The dashboard demonstrates key concepts of Binary Logistic Regression, including class imbalance handling, balancing techniques, link functions, ROC analysis, and confusion matrix evaluation.
